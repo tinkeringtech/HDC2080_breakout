@@ -8,40 +8,36 @@ float temperature = 0, humidity = 0;
 void setup() {
 
   Serial.begin(115200);
-  while (!Serial);
+  while(!Serial);
 
   // Initialize I2C communication
   sensor.begin();
-
+    
   // Begin with a device reset
-  // sensor.reset();
-
+  sensor.reset();
+  
   // Set up the comfort zone
   sensor.setHighTemp(28);         // High temperature of 28C
   sensor.setLowTemp(22);          // Low temperature of 22C
   sensor.setHighHumidity(55);     // High humidity of 55%
   sensor.setLowHumidity(40);      // Low humidity of 40%
-
+  
   // Configure Measurements
   sensor.setMeasurementMode(TEMP_AND_HUMID);  // Set measurements to temperature and humidity
   sensor.setRate(ONE_HZ);                     // Set measurement frequency to 1 Hz
   sensor.setTempRes(FOURTEEN_BIT);
   sensor.setHumidRes(FOURTEEN_BIT);
-
+  
   //begin measuring
   sensor.triggerMeasurement();
+}
 
-  Serial.println(sensor.readTempOffsetAdjust());
+void loop() {
 
   Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
   Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
   
-  Serial.println(sensor.setTempOffsetAdjust(10));
   // Wait 1 second for the next reading
   delay(1000);
-  Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
-  Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
-}
-
-void loop() {
+  
 }
