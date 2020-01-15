@@ -40,6 +40,8 @@ setMeasurementMode	KEYWORD2
 setRate	KEYWORD2
 setInterruptPolarity	KEYWORD2
 setInterruptMode	KEYWORD2
+readTempOffsetAdjust    KEYWORD2
+setTempOffsetAdjust    KEYWORD2
 
 ######################################
 # Constants (LITERAL1)

@@ -1,5 +1,4 @@
 #include <HDC2080.h>
-
 #define ADDR 0x40
 HDC2080 sensor(ADDR);
 
@@ -14,13 +13,7 @@ void setup() {
   sensor.begin();
 
   // Begin with a device reset
-  // sensor.reset();
-
-  // Set up the comfort zone
-  sensor.setHighTemp(28);         // High temperature of 28C
-  sensor.setLowTemp(22);          // Low temperature of 22C
-  sensor.setHighHumidity(55);     // High humidity of 55%
-  sensor.setLowHumidity(40);      // Low humidity of 40%
+  sensor.reset();
 
   // Configure Measurements
   sensor.setMeasurementMode(TEMP_AND_HUMID);  // Set measurements to temperature and humidity
@@ -28,20 +21,29 @@ void setup() {
   sensor.setTempRes(FOURTEEN_BIT);
   sensor.setHumidRes(FOURTEEN_BIT);
 
-  //begin measuring
   sensor.triggerMeasurement();
-
-  Serial.println(sensor.readTempOffsetAdjust());
-
-  Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
-  Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
-  
-  Serial.println(sensor.setTempOffsetAdjust(10));
-  // Wait 1 second for the next reading
   delay(1000);
   Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
   Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
+  Serial.println("Applying offset");
+  //Page 22 of datasheet
+  sensor.setTempOffsetAdjust(128); // offset –20.62°C
+  sensor.setHumidityOffsetAdjust(128); // offset –25%RH
+  delay(1000);
+  Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
+  Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
+  Serial.println("Reset offset");
+  sensor.setTempOffsetAdjust(0); // offset 0°C
+  sensor.setHumidityOffsetAdjust(0); // offset 0%RH
+  delay(1000);
 }
 
 void loop() {
+  // Wait 2 seconds for the next reading
+  static uint32_t t = 0;
+  if (millis() - t > 2000) {
+    t = millis();
+    Serial.print("Temperature (C): "); Serial.print(sensor.readTemp());
+    Serial.print("\t\tHumidity (%): "); Serial.println(sensor.readHumidity());
+  }
 }
