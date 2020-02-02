@@ -9,36 +9,34 @@
 	Wire.H library, and should be useable with both Arduino and Energia. 
 */
 
-
 #include <HDC2080.h>
 #include <Wire.h>
 
 //Define Register Map
-	#define TEMP_LOW 0x00
-	#define TEMP_HIGH 0x01
-	#define HUMID_LOW 0x02
-	#define HUMID_HIGH 0x03
-	#define INTERRUPT_DRDY 0x04
-	#define TEMP_MAX 0x05
-	#define HUMID_MAX 0x06
-	#define INTERRUPT_CONFIG 0x07
-	#define TEMP_OFFSET_ADJUST 0x08
-	#define HUM_OFFSET_ADJUST 0x09
-	#define TEMP_THR_L 0x0A
-	#define TEMP_THR_H 0x0B
-	#define HUMID_THR_L 0x0C
-	#define HUMID_THR_H 0x0D
-	#define CONFIG 0x0E
-	#define MEASUREMENT_CONFIG 0x0F
-	#define MID_L 0xFC
-	#define MID_H 0xFD
-	#define DEVICE_ID_L 0xFE
-	#define DEVICE_ID_H 0xFF
-	
+#define TEMP_LOW 0x00
+#define TEMP_HIGH 0x01
+#define HUMID_LOW 0x02
+#define HUMID_HIGH 0x03
+#define INTERRUPT_DRDY 0x04
+#define TEMP_MAX 0x05
+#define HUMID_MAX 0x06
+#define INTERRUPT_CONFIG 0x07
+#define TEMP_OFFSET_ADJUST 0x08
+#define HUM_OFFSET_ADJUST 0x09
+#define TEMP_THR_L 0x0A
+#define TEMP_THR_H 0x0B
+#define HUMID_THR_L 0x0C
+#define HUMID_THR_H 0x0D
+#define CONFIG 0x0E
+#define MEASUREMENT_CONFIG 0x0F
+#define MID_L 0xFC
+#define MID_H 0xFD
+#define DEVICE_ID_L 0xFE
+#define DEVICE_ID_H 0xFF
+
 HDC2080::HDC2080(uint8_t addr)
 {
-  _addr = addr;
-  
+	_addr = addr;
 }
 
 void HDC2080::begin(void)
@@ -55,9 +53,20 @@ float HDC2080::readTemp(void)
 	temp = byte[1];
 	temp = (temp << 8) | byte[0];
 	float f = temp;
-	f = ((f*165.0f)/65536.0f)-40.0f;
+	f = ((f * 165.0f) / 65536.0f) - 40.0f;
 	return f;
-	
+}
+
+uint8_t HDC2080::readTempOffsetAdjust(void)
+{
+	return readReg(TEMP_OFFSET_ADJUST);
+}
+
+// Página 22 do datasheet
+uint8_t HDC2080::setTempOffsetAdjust(uint8_t value)
+{
+	writeReg(TEMP_OFFSET_ADJUST, value);
+	return this->readTempOffsetAdjust();
 }
 
 float HDC2080::readHumidity(void)
@@ -69,73 +78,83 @@ float HDC2080::readHumidity(void)
 	humidity = byte[1];
 	humidity = (humidity << 8) | byte[0];
 	float f = humidity;
-	f = (f/65536.0f)*100.0f;
-	
+	f = (f / 65536.0f) * 100.0f;
+
 	return f;
-	
+}
+
+uint8_t HDC2080::readHumidityOffsetAdjust(void)
+{
+	return readReg(HUM_OFFSET_ADJUST);
+}
+
+// Página 23 do datasheet
+uint8_t HDC2080::setHumidityOffsetAdjust(uint8_t value)
+{
+	writeReg(HUM_OFFSET_ADJUST, value);
+	return this->readHumidityOffsetAdjust();
 }
 
 void HDC2080::enableHeater(void)
 {
-	uint8_t configContents;	//Stores current contents of config register
-	
+	uint8_t configContents; //Stores current contents of config register
+
 	configContents = readReg(CONFIG);
-	
+
 	//set bit 3 to 1 to enable heater
 	configContents = (configContents | 0x08);
-	
+
 	writeReg(CONFIG, configContents);
-	
 }
 
 void HDC2080::disableHeater(void)
 {
-	uint8_t configContents;	//Stores current contents of config register
-	
+	uint8_t configContents; //Stores current contents of config register
+
 	configContents = readReg(CONFIG);
-	
+
 	//set bit 3 to 0 to disable heater (all other bits 1)
 	configContents = (configContents & 0xF7);
 	writeReg(CONFIG, configContents);
-	
 }
 
 void HDC2080::openReg(uint8_t reg)
 {
-	Wire.beginTransmission(_addr); 			// Connect to HDC2080
-	Wire.write(reg); 						// point to specified register
-	Wire.endTransmission(); 				// Relinquish bus control	
+	Wire.beginTransmission(_addr); // Connect to HDC2080
+	Wire.write(reg);			   // point to specified register
+	Wire.endTransmission();		   // Relinquish bus control
 }
 
 uint8_t HDC2080::readReg(uint8_t reg)
 {
 	openReg(reg);
-	uint8_t reading; 					// holds byte of read data
-	Wire.requestFrom(_addr, 1); 		// Request 1 byte from open register
-	if (Wire.available() == 0){
+	uint8_t reading;			// holds byte of read data
+	Wire.requestFrom(_addr, 1); // Request 1 byte from open register
+	if (Wire.available() == 0)
+	{
 		reading = 0;
 	}
-	else {
+	else
+	{
 		reading = Wire.read();
 	}
-	
+
 	return reading;
 }
 
 void HDC2080::writeReg(uint8_t reg, uint8_t data)
 {
-	
-	Wire.beginTransmission(_addr);		// Open Device
-	Wire.write(reg);						// Point to register
-	Wire.write(data);						// Write data to register 
-	Wire.endTransmission();				// Relinquish bus control	
-		
+
+	Wire.beginTransmission(_addr); // Open Device
+	Wire.write(reg);			   // Point to register
+	Wire.write(data);			   // Write data to register
+	Wire.endTransmission();		   // Relinquish bus control
 }
 
 void HDC2080::setLowTemp(float temp)
 {
 	uint8_t temp_thresh_low;
-	
+
 	// Verify user is not trying to set value outside bounds
 	if (temp < -40.0f)
 	{
@@ -145,18 +164,17 @@ void HDC2080::setLowTemp(float temp)
 	{
 		temp = 125.0f;
 	}
-	
+
 	// Calculate value to load into register
-	temp_thresh_low = (uint8_t)(256.0f * (temp + 40.0f)/165.0f);
-	
+	temp_thresh_low = (uint8_t)(256.0f * (temp + 40.0f) / 165.0f);
+
 	writeReg(TEMP_THR_L, temp_thresh_low);
-	
 }
 
 void HDC2080::setHighTemp(float temp)
-{ 
+{
 	uint8_t temp_thresh_high;
-	
+
 	// Verify user is not trying to set value outside bounds
 	if (temp < -40.0f)
 	{
@@ -166,18 +184,17 @@ void HDC2080::setHighTemp(float temp)
 	{
 		temp = 125.0f;
 	}
-	
+
 	// Calculate value to load into register
-	temp_thresh_high = (uint8_t)(256.0f * (temp + 40.0f)/165.0f);
-	
+	temp_thresh_high = (uint8_t)(256.0f * (temp + 40.0f) / 165.0f);
+
 	writeReg(TEMP_THR_H, temp_thresh_high);
-	
 }
 
 void HDC2080::setHighHumidity(float humid)
 {
 	uint8_t humid_thresh;
-	
+
 	// Verify user is not trying to set value outside bounds
 	if (humid < 0.0f)
 	{
@@ -187,18 +204,17 @@ void HDC2080::setHighHumidity(float humid)
 	{
 		humid = 100.0f;
 	}
-	
+
 	// Calculate value to load into register
-	humid_thresh = (uint8_t)(256.0f * humid/100.0f);
-	
+	humid_thresh = (uint8_t)(256.0f * humid / 100.0f);
+
 	writeReg(HUMID_THR_H, humid_thresh);
-	
 }
 
 void HDC2080::setLowHumidity(float humid)
 {
 	uint8_t humid_thresh;
-	
+
 	// Verify user is not trying to set value outside bounds
 	if (humid < 0.0f)
 	{
@@ -208,158 +224,151 @@ void HDC2080::setLowHumidity(float humid)
 	{
 		humid = 100.0f;
 	}
-	
+
 	// Calculate value to load into register
 	humid_thresh = (uint8_t)(256.0f * humid / 100.0f);
-	
+
 	writeReg(HUMID_THR_L, humid_thresh);
-	
 }
 
 //  Return humidity from the low threshold register
 float HDC2080::readLowHumidityThreshold(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(HUMID_THR_L);
 	float f = regContents;
 	f = f * 100.0f / 256.0f;
 	return f;
-	
 }
 
 //  Return humidity from the high threshold register
 float HDC2080::readHighHumidityThreshold(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(HUMID_THR_H);
 	float f = regContents;
 	f = f * 100.0f / 256.0f;
 	return f;
-	
 }
 
 //  Return temperature from the low threshold register
 float HDC2080::readLowTempThreshold(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(TEMP_THR_L);
 	float f = regContents;
-	f = (f * 165.0f / 256.0f)-40.0f;
+	f = (f * 165.0f / 256.0f) - 40.0f;
 	return f;
-	
 }
 
 //  Return temperature from the high threshold register
 float HDC2080::readHighTempThreshold(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(TEMP_THR_H);
 	float f = regContents;
-	f = (f * 165.0f / 256.0f)-40.0f;
-	
-	return f;
-	
-}
+	f = (f * 165.0f / 256.0f) - 40.0f;
 
+	return f;
+}
 
 /* Upper two bits of the MEASUREMENT_CONFIG register controls
    the temperature resolution*/
 void HDC2080::setTempRes(int resolution)
-{ 
+{
 	uint8_t configContents;
 	configContents = readReg(MEASUREMENT_CONFIG);
-	
-	switch(resolution)
+
+	switch (resolution)
 	{
-		case FOURTEEN_BIT:
-			configContents = (configContents & 0x3F);
-			break;
-			
-		case ELEVEN_BIT:
-			configContents = (configContents & 0x7F);
-			configContents = (configContents | 0x40);  
-			break;
-			
-		case NINE_BIT:
-			configContents = (configContents & 0xBF);
-			configContents = (configContents | 0x80); 
-			break;
-			
-		default:
-			configContents = (configContents & 0x3F);
+	case FOURTEEN_BIT:
+		configContents = (configContents & 0x3F);
+		break;
+
+	case ELEVEN_BIT:
+		configContents = (configContents & 0x7F);
+		configContents = (configContents | 0x40);
+		break;
+
+	case NINE_BIT:
+		configContents = (configContents & 0xBF);
+		configContents = (configContents | 0x80);
+		break;
+
+	default:
+		configContents = (configContents & 0x3F);
 	}
-	
+
 	writeReg(MEASUREMENT_CONFIG, configContents);
-	
 }
 /*  Bits 5 and 6 of the MEASUREMENT_CONFIG register controls
     the humidity resolution*/
 void HDC2080::setHumidRes(int resolution)
-{ 
+{
 	uint8_t configContents;
 	configContents = readReg(MEASUREMENT_CONFIG);
-	
-	switch(resolution)
+
+	switch (resolution)
 	{
-		case FOURTEEN_BIT:
-			configContents = (configContents & 0xCF);
-			break;
-			
-		case ELEVEN_BIT:
-			configContents = (configContents & 0xDF);
-			configContents = (configContents | 0x10);  
-			break;
-			
-		case NINE_BIT:
-			configContents = (configContents & 0xEF);
-			configContents = (configContents | 0x20); 
-			break;
-			
-		default:
-			configContents = (configContents & 0xCF);
+	case FOURTEEN_BIT:
+		configContents = (configContents & 0xCF);
+		break;
+
+	case ELEVEN_BIT:
+		configContents = (configContents & 0xDF);
+		configContents = (configContents | 0x10);
+		break;
+
+	case NINE_BIT:
+		configContents = (configContents & 0xEF);
+		configContents = (configContents | 0x20);
+		break;
+
+	default:
+		configContents = (configContents & 0xCF);
 	}
-	
-	writeReg(MEASUREMENT_CONFIG, configContents);	
+
+	writeReg(MEASUREMENT_CONFIG, configContents);
 }
 
 /*  Bits 2 and 1 of the MEASUREMENT_CONFIG register controls
     the measurement mode  */
 void HDC2080::setMeasurementMode(int mode)
-{ 
+{
 	uint8_t configContents;
 	configContents = readReg(MEASUREMENT_CONFIG);
-	
-	switch(mode)
+
+	switch (mode)
 	{
-		case TEMP_AND_HUMID:
-			configContents = (configContents & 0xF9);
-			break;
-			
-		case TEMP_ONLY:
-			configContents = (configContents & 0xFC);
-			configContents = (configContents | 0x02);  
-			break;
-			
-		case HUMID_ONLY:
-			configContents = (configContents & 0xFD);
-			configContents = (configContents | 0x04); 
-			break;
-			
-		default:
-			configContents = (configContents & 0xF9);
+	case TEMP_AND_HUMID:
+		configContents = (configContents & 0xF9);
+		break;
+
+	case TEMP_ONLY:
+		configContents = (configContents & 0xFC);
+		configContents = (configContents | 0x02);
+		break;
+
+	case HUMID_ONLY:
+		configContents = (configContents & 0xFD);
+		configContents = (configContents | 0x04);
+		break;
+
+	default:
+		configContents = (configContents & 0xF9);
 	}
-	
+
 	writeReg(MEASUREMENT_CONFIG, configContents);
 }
 
 /*  Bit 0 of the MEASUREMENT_CONFIG register can be used
     to trigger measurements  */
 void HDC2080::triggerMeasurement(void)
-{ 
+{
 	uint8_t configContents;
 	configContents = readReg(MEASUREMENT_CONFIG);
 
@@ -401,58 +410,57 @@ void HDC2080::disableInterrupt(void)
 	writeReg(CONFIG, configContents);
 }
 
-
 /*  Bits 6-4  of the CONFIG register controls the measurement 
     rate  */
 void HDC2080::setRate(int rate)
-{ 
+{
 	uint8_t configContents;
 	configContents = readReg(CONFIG);
-	
-	switch(rate)
+
+	switch (rate)
 	{
-		case MANUAL:
-			configContents = (configContents & 0x8F);
-			break;
-			
-		case TWO_MINS:
-			configContents = (configContents & 0x9F);
-			configContents = (configContents | 0x10);  
-			break;
-			
-		case ONE_MINS:
-			configContents = (configContents & 0xAF);
-			configContents = (configContents | 0x20); 
-			break;
-		
-		case TEN_SECONDS:
-			configContents = (configContents & 0xBF);
-			configContents = (configContents | 0x30); 
-			break;
-		
-		case FIVE_SECONDS:
-			configContents = (configContents & 0xCF);
-			configContents = (configContents | 0x40); 
-			break;
-		
-		case ONE_HZ:
-			configContents = (configContents & 0xDF);
-			configContents = (configContents | 0x50); 
-			break;
-		
-		case TWO_HZ:
-			configContents = (configContents & 0xEF);
-			configContents = (configContents | 0x60); 
-			break;
-		
-		case FIVE_HZ:
-			configContents = (configContents | 0x70); 
-			break;
-			
-		default:
-			configContents = (configContents & 0x8F);
+	case MANUAL:
+		configContents = (configContents & 0x8F);
+		break;
+
+	case TWO_MINS:
+		configContents = (configContents & 0x9F);
+		configContents = (configContents | 0x10);
+		break;
+
+	case ONE_MINS:
+		configContents = (configContents & 0xAF);
+		configContents = (configContents | 0x20);
+		break;
+
+	case TEN_SECONDS:
+		configContents = (configContents & 0xBF);
+		configContents = (configContents | 0x30);
+		break;
+
+	case FIVE_SECONDS:
+		configContents = (configContents & 0xCF);
+		configContents = (configContents | 0x40);
+		break;
+
+	case ONE_HZ:
+		configContents = (configContents & 0xDF);
+		configContents = (configContents | 0x50);
+		break;
+
+	case TWO_HZ:
+		configContents = (configContents & 0xEF);
+		configContents = (configContents | 0x60);
+		break;
+
+	case FIVE_HZ:
+		configContents = (configContents | 0x70);
+		break;
+
+	default:
+		configContents = (configContents & 0x8F);
 	}
-	
+
 	writeReg(CONFIG, configContents);
 }
 
@@ -462,22 +470,22 @@ void HDC2080::setInterruptPolarity(int polarity)
 {
 	uint8_t configContents;
 	configContents = readReg(CONFIG);
-	
-	switch(polarity)
+
+	switch (polarity)
 	{
-		case ACTIVE_LOW:
-			configContents = (configContents & 0xFD);
-			break;
-			
-		case ACTIVE_HIGH:
-			configContents = (configContents | 0x02);  
-			break;
-			
-		default:
-			configContents = (configContents & 0xFD);
+	case ACTIVE_LOW:
+		configContents = (configContents & 0xFD);
+		break;
+
+	case ACTIVE_HIGH:
+		configContents = (configContents | 0x02);
+		break;
+
+	default:
+		configContents = (configContents & 0xFD);
 	}
-	
-	writeReg(CONFIG, configContents);	
+
+	writeReg(CONFIG, configContents);
 }
 
 /*  Bit 0 of the CONFIG register can be used to control the  
@@ -486,42 +494,40 @@ void HDC2080::setInterruptMode(int mode)
 {
 	uint8_t configContents;
 	configContents = readReg(CONFIG);
-	
-	switch(mode)
-	{
-		case LEVEL_MODE:
-			configContents = (configContents & 0xFE);
-			break;
-			
-		case COMPARATOR_MODE:
-			configContents = (configContents | 0x01);  
-			break;
-			
-		default:
-			configContents = (configContents & 0xFE);
-	}
-	
-	writeReg(CONFIG, configContents);	
-}
 
+	switch (mode)
+	{
+	case LEVEL_MODE:
+		configContents = (configContents & 0xFE);
+		break;
+
+	case COMPARATOR_MODE:
+		configContents = (configContents | 0x01);
+		break;
+
+	default:
+		configContents = (configContents & 0xFE);
+	}
+
+	writeReg(CONFIG, configContents);
+}
 
 uint8_t HDC2080::readInterruptStatus(void)
 {
 	uint8_t regContents;
 	regContents = readReg(INTERRUPT_DRDY);
 	return regContents;
-	
 }
 
 //  Clears the maximum temperature register
 void HDC2080::clearMaxTemp(void)
-{ 
+{
 	writeReg(TEMP_MAX, 0x00);
 }
 
 //  Clears the maximum humidity register
 void HDC2080::clearMaxHumidity(void)
-{ 
+{
 	writeReg(HUMID_MAX, 0x00);
 }
 
@@ -529,39 +535,36 @@ void HDC2080::clearMaxHumidity(void)
 float HDC2080::readMaxTemp(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(TEMP_MAX);
 	float f = regContents;
-	f = (f * 165.0f / 256.0f)-40.0f;
+	f = (f * 165.0f / 256.0f) - 40.0f;
 
 	return f;
-	
 }
 
 //  Reads the maximum humidity register
 float HDC2080::readMaxHumidity(void)
 {
 	uint8_t regContents;
-	
+
 	regContents = readReg(HUMID_MAX);
 	float f = regContents;
-	f = (f / 256.0f)*100.0f;
+	f = (f / 256.0f) * 100.0f;
 
 	return f;
-	
 }
-
 
 // Enables the interrupt pin for comfort zone operation
 void HDC2080::enableThresholdInterrupt(void)
 {
-	
+
 	uint8_t regContents;
 	regContents = readReg(INTERRUPT_CONFIG);
 
 	regContents = (regContents | 0x78);
 
-	writeReg(INTERRUPT_CONFIG, regContents);	
+	writeReg(INTERRUPT_CONFIG, regContents);
 }
 
 // Disables the interrupt pin for comfort zone operation
@@ -572,7 +575,7 @@ void HDC2080::disableThresholdInterrupt(void)
 
 	regContents = (regContents & 0x87);
 
-	writeReg(INTERRUPT_CONFIG, regContents);	
+	writeReg(INTERRUPT_CONFIG, regContents);
 }
 
 // enables the interrupt pin for DRDY operation
@@ -583,7 +586,7 @@ void HDC2080::enableDRDYInterrupt(void)
 
 	regContents = (regContents | 0x80);
 
-	writeReg(INTERRUPT_CONFIG, regContents);	
+	writeReg(INTERRUPT_CONFIG, regContents);
 }
 
 // disables the interrupt pin for DRDY operation
@@ -594,5 +597,5 @@ void HDC2080::disableDRDYInterrupt(void)
 
 	regContents = (regContents & 0x7F);
 
-	writeReg(INTERRUPT_CONFIG, regContents);	
+	writeReg(INTERRUPT_CONFIG, regContents);
 }
