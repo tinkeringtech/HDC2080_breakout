@@ -8,7 +8,7 @@
 	and constants used in the source code. 
 */
 
-#ifndef HDC2080_H
+#ifndef HDC2080_h
 #define HDC2080_h
 
 #include <Arduino.h>
