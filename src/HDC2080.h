@@ -43,6 +43,7 @@ class HDC2080
 public:
 	HDC2080(uint8_t addr);					  // Initialize the HDC2080
 	void begin(void);						  // Join I2C bus
+	void begin(int sda, int scl);	// Join I2C bus with specified SDA and SCL pins
 	float readTemp(void);					  // Returns the temperature in degrees C
 	uint8_t readTempOffsetAdjust(void);		  // Returns the offset adjust in binary
 	uint8_t setTempOffsetAdjust(uint8_t);	 // Set and return the offset adjust in binary
