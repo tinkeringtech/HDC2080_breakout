@@ -44,6 +44,11 @@ void HDC2080::begin(void)
 	Wire.begin();
 }
 
+void HDC2080::begin(int sda, int scl)
+{
+	Wire.begin(sda, scl);
+}
+
 float HDC2080::readTemp(void)
 {
 	uint8_t byte[2];
